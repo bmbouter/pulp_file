@@ -1,6 +1,7 @@
 from django.http import Http404
 from django_filters import CharFilter
 from drf_yasg.utils import swagger_auto_schema
+from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
@@ -24,6 +25,7 @@ from pulpcore.plugin.viewsets import (
 )
 
 from . import tasks
+from .access_policy import FileRemoteAccessPolicy, FileRepositoryAccessPolicy
 from .models import (
     FileContent,
     FileDistribution,
@@ -67,7 +69,10 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
     filterset_class = FileContentFilter
 
 
-class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
+class FileRepositoryViewSet(
+    RepositoryViewSet,
+    ModifyRepositoryActionMixin,
+):
     """
     <!-- User-facing documentation, rendered as html-->
     FileRepository represents a single file repository, to which content can be synced, added,
@@ -77,6 +82,7 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
     endpoint_name = "file"
     queryset = FileRepository.objects.all()
     serializer_class = FileRepositorySerializer
+    permission_classes = (FileRepositoryAccessPolicy,)
 
     @swagger_auto_schema(
         operation_description="Trigger an asynchronous task to sync file content.",
@@ -103,6 +109,11 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
         )
         return OperationPostponedResponse(result, request)
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user_visible_objects = get_objects_for_user(self.request.user, "file.view_filerepository")
+        return qs.intersection(user_visible_objects)
+
 
 class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
     """
@@ -124,6 +135,12 @@ class FileRemoteViewSet(RemoteViewSet):
     endpoint_name = "file"
     queryset = FileRemote.objects.all()
     serializer_class = FileRemoteSerializer
+    permission_classes = (FileRemoteAccessPolicy,)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user_visible_objects = get_objects_for_user(self.request.user, "file.view_fileremote")
+        return qs.intersection(user_visible_objects)
 
 
 class FilePublicationViewSet(PublicationViewSet):

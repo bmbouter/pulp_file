@@ -8,3 +8,7 @@ class PulpFilePluginAppConfig(PulpPluginAppConfig):
 
     name = "pulp_file.app"
     label = "file"
+
+    def ready(self):
+        import pulp_file.app.signals  # noqa
+        super().ready()

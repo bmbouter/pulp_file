@@ -48,8 +48,19 @@ class FileRepository(Repository):
     TYPE = "file"
     CONTENT_TYPES = [FileContent]
 
+    AUTO_ASSIGN_OBJECT_PERMS = [
+        "file.view_filerepository",
+        "file.change_filerepository",
+        "file.delete_filerepository",
+        "file.modify_repo_content",
+    ]
+
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = (
+            ('modify_repo_content', 'Modify Repository Content'),
+        )
+
 
     def finalize_new_version(self, new_version):
         """
@@ -73,6 +84,12 @@ class FileRemote(Remote):
     """
 
     TYPE = "file"
+
+    AUTO_ASSIGN_OBJECT_PERMS = [
+        "file.view_fileremote",
+        "file.change_fileremote",
+        "file.delete_fileremote",
+    ]
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
